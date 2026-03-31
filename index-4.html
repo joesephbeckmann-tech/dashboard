@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Checkride Study System — Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0a1628;--accent:#185FA5;--accent2:#4b9de8;--accent-light:rgba(24,95,165,0.13);
+  --bg:#0a1628;--bg2:#111e35;--bg3:#132240;
+  --text:#e8f0ff;--text2:#7a93b8;--text3:#4a6080;
+  --border:rgba(24,95,165,0.18);--border2:rgba(24,95,165,0.32);
+  --gold:#e8a020;--green:#3db87a;--red:#e24b4a;
+  --r-md:8px;--r-lg:12px;--r-xl:16px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.hdr{background:var(--navy);border-bottom:1px solid var(--border);padding:0 1.75rem;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:26px;height:26px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-name{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+.logo-sub{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace}
+.hdr-r{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace}
+.wrap{max-width:1040px;margin:0 auto;padding:1.5rem}
+
+/* GOAL BLOCKS */
+.goal-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xl);padding:1.5rem 1.75rem;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.goal-block::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.goal-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1rem}
+.goal-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace}
+.goal-nums{display:flex;align-items:baseline;gap:6px}
+.goal-cur{font-size:30px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;line-height:1}
+.goal-tgt{font-size:14px;color:var(--text2);font-family:'DM Mono',monospace}
+.prog-track{height:7px;background:rgba(24,95,165,0.18);border-radius:99px;margin-bottom:.6rem;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.prog-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace}
+.pct-badge{background:var(--accent-light);color:var(--accent2);font-size:11px;padding:2px 9px;border-radius:99px;font-family:'DM Mono',monospace}
+
+/* TWO GOALS SIDE BY SIDE */
+.two-goals{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+
+/* METRIC GRID */
+.m-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.m-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-lg);padding:.875rem 1rem}
+.m-lbl{font-size:10px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace}
+.m-val{font-size:22px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;line-height:1.1}
+.m-sub{font-size:10px;color:var(--text2);margin-top:3px}
+
+/* FUNNEL */
+.funnel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.f-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem;text-align:center}
+.f-num{font-size:32px;font-weight:600;font-family:'DM Mono',monospace;color:var(--accent2);line-height:1.1}
+.f-lbl{font-size:11px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace}
+.f-conv{font-size:12px;color:var(--gold);margin-top:6px;font-family:'DM Mono',monospace}
+
+/* CARDS */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.125rem 1.25rem;margin-bottom:1.25rem}
+.card-title{font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;font-family:'DM Mono',monospace;margin-bottom:1rem}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+
+/* WEEK LOG */
+.add-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.add-bar input{width:130px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:6px 10px;height:34px;outline:none;transition:border-color .15s}
+.add-bar input.wl{width:200px}
+.add-bar input:focus{border-color:var(--accent)}
+.add-bar input::placeholder{color:var(--text3)}
+.btn-p{font-family:'DM Sans',sans-serif;font-size:13px;height:34px;padding:6px 16px;border-radius:var(--r-md);border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;transition:all .15s}
+.btn-p:hover{background:var(--accent2);border-color:var(--accent2)}
+
+/* WEEK TABLE */
+.tbl-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:1.25rem}
+.tbl-hdr,.tbl-row{display:grid;gap:8px;padding:.65rem 1rem;align-items:center;font-size:13px}
+.tbl-hdr{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;font-family:'DM Mono',monospace;background:var(--bg2);border-bottom:1px solid var(--border)}
+.tbl-row{color:var(--text);border-bottom:1px solid var(--border);transition:background .12s}
+.tbl-row:last-child{border-bottom:none}
+.tbl-row:hover{background:var(--bg2)}
+.gwk{grid-template-columns:110px 1fr 80px 80px 80px 80px 50px}
+.num{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);text-align:right}
+.num-g{color:var(--gold);font-weight:500}
+.num-gr{color:var(--green);font-weight:500}
+.del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px;height:auto;transition:all .1s}
+.del:hover{background:rgba(226,75,74,.15);color:var(--red)}
+.empty{padding:2.5rem 1rem;font-size:13px;color:var(--text2);text-align:center}
+
+/* SETTINGS */
+.settings-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.125rem 1.25rem;margin-bottom:1rem}
+.settings-card h3{font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;font-family:'DM Mono',monospace;margin-bottom:.75rem}
+.settings-card p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:.75rem}
+.gs-input{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:6px 10px;height:34px;outline:none;width:100%;max-width:460px;transition:border-color .15s}
+.gs-input:focus{border-color:var(--accent)}
+.gs-input::placeholder{color:var(--text3)}
+.dot-l{width:7px;height:7px;border-radius:50%;background:#3b6d11;display:inline-block;margin-right:5px}
+.dot-p{width:7px;height:7px;border-radius:50%;background:#ba7517;display:inline-block;margin-right:5px}
+
+/* SECTION LABEL */
+.section-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;font-family:'DM Mono',monospace;margin-bottom:.75rem}
+
+/* TOGGLE */
+.toggle-row{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.toggle{font-size:12px;padding:5px 14px;cursor:pointer;border-radius:99px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .15s}
+.toggle:hover,.toggle.on{background:var(--accent-light);color:var(--accent2);border-color:var(--accent)}
+
+/* SPINNER */
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:700px){
+  .m-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col,.funnel-grid,.two-goals{grid-template-columns:1fr}
+  .wrap{padding:1rem}
+  .hdr{padding:0 1rem}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M2 10L8 3L14 10" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 13L8 10L11 13" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-name">Checkride Study System</div>
+      <div class="logo-sub">analytics dashboard</div>
+    </div>
+  </div>
+  <div class="hdr-r" id="hdr-t">--:--</div>
+</header>
+
+<div class="wrap">
+
+  <!-- REVENUE GOALS -->
+  <div class="two-goals">
+    <div class="goal-block" style="margin-bottom:0">
+      <div class="goal-hdr">
+        <span class="goal-lbl">2026 Revenue Goal</span>
+        <div class="goal-nums"><span class="goal-cur" id="yr-rev">$0</span><span class="goal-tgt">/ $50,000</span></div>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="yr-bar" style="width:0%"></div></div>
+      <div class="prog-meta"><span id="yr-pct">0% complete</span><span class="pct-badge" id="yr-rem">$50,000 to go</span></div>
+    </div>
+    <div class="goal-block" style="margin-bottom:0">
+      <div class="goal-hdr">
+        <span class="goal-lbl">Weekly Revenue Goal</span>
+        <div class="goal-nums"><span class="goal-cur" id="wk-rev">$0</span><span class="goal-tgt">/ $1,000</span></div>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="wk-bar" style="width:0%"></div></div>
+      <div class="prog-meta"><span id="wk-pct">0% this week</span><span class="pct-badge" id="wk-rem">$1,000 to go</span></div>
+    </div>
+  </div>
+
+  <!-- METRIC CARDS -->
+  <div class="m-grid">
+    <div class="m-card">
+      <div class="m-lbl">This week revenue</div>
+      <div class="m-val" id="m-wrev">$0</div>
+      <div class="m-sub" id="m-wrev-sub">week of --</div>
+    </div>
+    <div class="m-card">
+      <div class="m-lbl">Videos this week</div>
+      <div class="m-val" id="m-vids">0</div>
+      <div class="m-sub">across all platforms</div>
+    </div>
+    <div class="m-card">
+      <div class="m-lbl">Total views</div>
+      <div class="m-val" id="m-views">0</div>
+      <div class="m-sub">this week</div>
+    </div>
+    <div class="m-card">
+      <div class="m-lbl">Engagement rate</div>
+      <div class="m-val" id="m-eng">0%</div>
+      <div class="m-sub">avg likes / views</div>
+    </div>
+  </div>
+
+  <!-- PRODUCT FUNNEL -->
+  <div class="section-lbl">Product funnel</div>
+  <div class="funnel-grid">
+    <div class="f-card">
+      <div class="f-num" id="f-lm">0</div>
+      <div class="f-lbl">Roadmap downloads</div>
+      <div class="f-conv" id="f-conv">0% convert to Blueprint</div>
+    </div>
+    <div class="f-card">
+      <div class="f-num" id="f-bp">0</div>
+      <div class="f-lbl">Blueprint purchases</div>
+      <div class="f-conv" id="f-bp-rev">$0 revenue</div>
+    </div>
+    <div class="f-card">
+      <div class="f-num" id="f-css">0</div>
+      <div class="f-lbl">Study System purchases</div>
+      <div class="f-conv" id="f-css-rev">$0 revenue</div>
+    </div>
+  </div>
+
+  <!-- VIEWS BY PLATFORM + REVENUE BY PRODUCT -->
+  <div class="two-col">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Views by platform</div>
+      <div style="position:relative;height:200px"><canvas id="c-plat"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Revenue by product</div>
+      <div style="position:relative;height:200px"><canvas id="c-prod"></canvas></div>
+    </div>
+  </div>
+
+  <!-- WEEKLY LOG -->
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">Log this week</div>
+    <div class="add-bar">
+      <input type="week" id="wl-d" style="width:160px"/>
+      <input class="wl" id="wl-n" placeholder="What did you post about?" />
+      <input type="number" id="wl-v" placeholder="Total views" />
+      <input type="number" id="wl-e" placeholder="Avg eng %" />
+      <input type="number" id="wl-r" placeholder="Revenue $" />
+      <input type="number" id="wl-vids" placeholder="Videos posted" />
+      <button class="btn-p" onclick="addWeek()">+ Log week</button>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <div class="tbl-hdr gwk">
+      <span>Week</span><span>Focus</span>
+      <span style="text-align:right">Views</span>
+      <span style="text-align:right">Eng %</span>
+      <span style="text-align:right">Revenue</span>
+      <span style="text-align:right">Videos</span>
+      <span></span>
+    </div>
+    <div id="wk-list"></div>
+    <div id="no-wk" class="empty">No weeks logged yet. Add your first week above.</div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="settings-card">
+    <h3>Google Sheet connection (Zapier)</h3>
+    <p>Paste your published Google Sheet CSV URL here. Revenue syncs automatically every time the dashboard loads.</p>
+    <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
+      <input class="gs-input" id="gs-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"/>
+      <button class="btn-p" onclick="saveGs()">Save</button>
+    </div>
+    <div id="gs-st" style="font-size:12px;color:var(--text2)"><span class="dot-p"></span>Not connected</div>
+  </div>
+
+  <div class="settings-card">
+    <h3>Data management</h3>
+    <p>All data is stored in your browser local storage.</p>
+    <button style="font-family:'DM Sans',sans-serif;font-size:13px;height:34px;padding:6px 16px;border-radius:var(--r-md);border:1px solid var(--red);background:transparent;color:var(--red);cursor:pointer" onclick="if(confirm('Clear all data?')){clearAll()}">Clear all data</button>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const SK='css_v5';
+const YR_GOAL=50000;
+const WK_GOAL=1000;
+
+// Product name mapping — matches exact Kajabi offer names
+const PROD_MAP={
+  'private pilot ground study roadmap':'leadmagnet',
+  'the private pilot study blueprint':'blueprint',
+  'checkride study system':'css',
+  '806 checkride questions':'806',
+  'phak condensed study guide':'phak',
+  '1:1 ground session':'ground',
+  'mock oral':'mock'
+};
+const PROD_LABELS={
+  leadmagnet:'Roadmap',
+  blueprint:'Blueprint',
+  css:'Study System',
+  '806':'806 Questions',
+  phak:'PHAK Guide',
+  ground:'1:1 Ground',
+  mock:'Mock Oral'
+};
+
+let S={revenue:[],weeks:[],gsUrl:''};
+let CH={};
+
+function sv(){try{localStorage.setItem(SK,JSON.stringify(S))}catch(e){}}
+function ld(){try{const d=localStorage.getItem(SK);if(d)S=JSON.parse(d)}catch(e){}}
+ld();
+
+function fN(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return Math.round(n).toString()}
+function fD(n){return'$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0})}
+
+function getThisWeek(){
+  const now=new Date();
+  const day=now.getDay();
+  const diff=now.getDate()-day+(day===0?-6:1);
+  const mon=new Date(now.setDate(diff));
+  const y=mon.getFullYear();
+  const m=String(mon.getMonth()+1).padStart(2,'0');
+  const d=String(mon.getDate()).padStart(2,'0');
+  return`${y}-${m}-${d}`;
+}
+
+function matchProduct(name){
+  if(!name)return'css';
+  const lower=name.toLowerCase().trim();
+  for(const[key,val]of Object.entries(PROD_MAP)){
+    if(lower.includes(key))return val;
+  }
+  return'css';
+}
+
+function parseCSVRow(row){
+  // handles quoted fields with commas inside (like dates with timestamps)
+  const result=[];
+  let cur='';
+  let inQuote=false;
+  for(let i=0;i<row.length;i++){
+    const ch=row[i];
+    if(ch==='"'){inQuote=!inQuote}
+    else if(ch===','&&!inQuote){result.push(cur.trim());cur=''}
+    else{cur+=ch}
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function addWeek(){
+  const d=document.getElementById('wl-d').value;
+  if(!d){alert('Select a week.');return}
+  const ei=S.weeks.findIndex(w=>w.date===d);
+  const e={
+    id:ei>=0?S.weeks[ei].id:Date.now(),
+    date:d,
+    note:document.getElementById('wl-n').value.trim(),
+    views:+document.getElementById('wl-v').value||0,
+    eng:+document.getElementById('wl-e').value||0,
+    rev:+document.getElementById('wl-r').value||0,
+    vids:+document.getElementById('wl-vids').value||0
+  };
+  if(ei>=0)S.weeks[ei]=e;else S.weeks.push(e);
+  S.weeks.sort((a,b)=>a.date.localeCompare(b.date));
+  sv();
+  ['wl-n','wl-v','wl-e','wl-r','wl-vids'].forEach(id=>document.getElementById(id).value='');
+  renderWkList();
+  renderAll();
+}
+
+function delWk(id){S.weeks=S.weeks.filter(w=>w.id!==id);sv();renderWkList();renderAll()}
+
+function renderWkList(){
+  const el=document.getElementById('wk-list');
+  const none=document.getElementById('no-wk');
+  if(!S.weeks.length){el.innerHTML='';none.style.display='block';return}
+  none.style.display='none';
+  const mr=Math.max(...S.weeks.map(w=>w.rev),1);
+  el.innerHTML=[...S.weeks].reverse().map(w=>{
+    const top=w.rev===mr&&w.rev>0;
+    return`<div class="tbl-row gwk" style="${top?'background:rgba(24,95,165,0.08)':''}">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text2)">${w.date}</div>
+      <div style="font-size:13px">${w.note||'--'}</div>
+      <div class="num">${fN(w.views)}</div>
+      <div class="num">${w.eng?w.eng+'%':'--'}</div>
+      <div class="num ${top?'num-gr':'num-g'}">${w.rev?fD(w.rev):'--'}</div>
+      <div class="num">${w.vids||'--'}</div>
+      <div style="text-align:right"><button class="del" onclick="delWk(${w.id})">x</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){
+  const totalRev=S.revenue.reduce((s,r)=>s+r.amount,0);
+
+  // yearly goal
+  const yrPct=Math.min((totalRev/YR_GOAL)*100,100);
+  document.getElementById('yr-rev').textContent=fD(totalRev);
+  document.getElementById('yr-bar').style.width=yrPct.toFixed(1)+'%';
+  document.getElementById('yr-pct').textContent=yrPct.toFixed(1)+'% complete';
+  document.getElementById('yr-rem').textContent=fD(Math.max(0,YR_GOAL-totalRev))+' to go';
+
+  // weekly goal — use latest logged week or current week
+  const thisWeek=getThisWeek();
+  const latestWk=S.weeks.length?S.weeks[S.weeks.length-1]:null;
+  const wkRev=latestWk?latestWk.rev:S.revenue.filter(r=>{
+    const rd=r.date||'';
+    return rd.startsWith(thisWeek.substring(0,7));
+  }).reduce((s,r)=>s+r.amount,0);
+  const wkPct=Math.min((wkRev/WK_GOAL)*100,100);
+  document.getElementById('wk-rev').textContent=fD(wkRev);
+  document.getElementById('wk-bar').style.width=wkPct.toFixed(1)+'%';
+  document.getElementById('wk-pct').textContent=wkPct.toFixed(1)+'% this week';
+  document.getElementById('wk-rem').textContent=fD(Math.max(0,WK_GOAL-wkRev))+' to go';
+
+  // metric cards from latest week
+  document.getElementById('m-wrev').textContent=fD(wkRev);
+  document.getElementById('m-wrev-sub').textContent=latestWk?'week of '+latestWk.date:'no week logged';
+  document.getElementById('m-vids').textContent=latestWk?latestWk.vids:0;
+  document.getElementById('m-views').textContent=latestWk?fN(latestWk.views):0;
+  document.getElementById('m-eng').textContent=latestWk&&latestWk.eng?latestWk.eng+'%':'0%';
+
+  // funnel
+  const lmCount=S.revenue.filter(r=>r.key==='leadmagnet').length;
+  const bpCount=S.revenue.filter(r=>r.key==='blueprint').length;
+  const cssCount=S.revenue.filter(r=>r.key==='css').length;
+  const bpRev=S.revenue.filter(r=>r.key==='blueprint').reduce((s,r)=>s+r.amount,0);
+  const cssRev=S.revenue.filter(r=>r.key==='css').reduce((s,r)=>s+r.amount,0);
+  const conv=lmCount>0?((bpCount/lmCount)*100).toFixed(1):'0';
+  document.getElementById('f-lm').textContent=lmCount;
+  document.getElementById('f-bp').textContent=bpCount;
+  document.getElementById('f-css').textContent=cssCount;
+  document.getElementById('f-conv').textContent=conv+'% convert to Blueprint';
+  document.getElementById('f-bp-rev').textContent=fD(bpRev)+' revenue';
+  document.getElementById('f-css-rev').textContent=fD(cssRev)+' revenue';
+
+  renderCharts();
+}
+
+function dc(k){if(CH[k]){CH[k].destroy();delete CH[k]}}
+const TC='#7a93b8',GC='rgba(24,95,165,0.1)';
+
+function renderCharts(){
+  // platform views from weeks
+  const platMap={TikTok:0,Instagram:0,YouTube:0,Facebook:0};
+  // use weekly logged views split evenly across platforms as approximation
+  // or if user logs per platform we can extend later
+  // for now show revenue by product
+  dc('plat');
+  const c1=document.getElementById('c-plat');
+  // platform data from weeks — show total views per week as a bar
+  const wks=S.weeks.slice(-8);
+  if(c1&&wks.length){
+    CH.plat=new Chart(c1,{
+      type:'bar',
+      data:{
+        labels:wks.map(w=>w.date),
+        datasets:[{label:'Views',data:wks.map(w=>w.views),backgroundColor:'#185FA5',hoverBackgroundColor:'#4b9de8',borderRadius:4}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fN(v),font:{size:10},color:TC},grid:{color:GC},border:{display:false}},x:{ticks:{font:{size:10},color:TC,maxRotation:45},grid:{display:false},border:{display:false}}}}
+    });
+  }
+
+  dc('prod');
+  const c2=document.getElementById('c-prod');
+  const pm={};
+  S.revenue.filter(r=>r.amount>0).forEach(r=>{
+    const lbl=PROD_LABELS[r.key]||r.key;
+    pm[lbl]=(pm[lbl]||0)+r.amount;
+  });
+  if(c2&&Object.keys(pm).length){
+    CH.prod=new Chart(c2,{
+      type:'bar',
+      data:{labels:Object.keys(pm),datasets:[{data:Object.values(pm),backgroundColor:'#185FA5',hoverBackgroundColor:'#4b9de8',borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+fN(v),font:{size:10},color:TC},grid:{color:GC},border:{display:false}},x:{ticks:{font:{size:10},color:TC},grid:{display:false},border:{display:false}}}}
+    });
+  }
+}
+
+function saveGs(){
+  const url=document.getElementById('gs-url').value.trim();
+  S.gsUrl=url;sv();
+  if(url){
+    document.getElementById('gs-st').innerHTML='<span class="dot-p"></span>Saved. Syncing...';
+    fetchGs(url);
+  }
+}
+
+async function fetchGs(url){
+  if(!url)return;
+  try{
+    const res=await fetch(url);
+    const text=await res.text();
+    const lines=text.trim().split('\n');
+    // find header row
+    const headerLine=lines[0].toLowerCase();
+    const hasHeader=headerLine.includes('product')||headerLine.includes('amount')||headerLine.includes('date');
+    const dataLines=hasHeader?lines.slice(1):lines;
+    let added=0;
+    dataLines.forEach(line=>{
+      if(!line.trim())return;
+      const cols=parseCSVRow(line);
+      if(cols.length<2)return;
+      const prodRaw=(cols[0]||'').replace(/"/g,'').trim();
+      const amtRaw=(cols[1]||'').replace(/[^0-9.]/g,'');
+      const amt=parseFloat(amtRaw)||0;
+      // date is col 2, strip timestamp if present
+      const dateRaw=(cols[2]||'').replace(/"/g,'').trim();
+      const date=dateRaw.split(' ')[0]||new Date().toLocaleDateString();
+      if(!prodRaw)return;
+      const key=matchProduct(prodRaw);
+      const exists=S.revenue.some(r=>r.product===prodRaw&&r.date===date&&r.amount===amt);
+      if(!exists){
+        S.revenue.push({id:Date.now()+Math.random(),key,product:prodRaw,amount:amt,date,week:'',source:'zapier'});
+        added++;
+      }
+    });
+    sv();renderAll();
+    document.getElementById('gs-st').innerHTML=`<span class="dot-l"></span>Connected and synced${added?' ('+added+' new)':''}`;
+  }catch(e){
+    document.getElementById('gs-st').innerHTML='<span class="dot-p"></span>Could not reach sheet. Check the URL.';
+  }
+}
+
+function clearAll(){
+  S={revenue:[],weeks:[],gsUrl:''};sv();
+  renderWkList();renderAll();
+  document.getElementById('gs-url').value='';
+  document.getElementById('gs-st').innerHTML='<span class="dot-p"></span>Not connected';
+}
+
+// init
+if(S.gsUrl){document.getElementById('gs-url').value=S.gsUrl;fetchGs(S.gsUrl)}
+document.getElementById('hdr-t').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+renderWkList();renderAll();
+</script>
+</body>
+</html>
